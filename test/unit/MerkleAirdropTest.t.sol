@@ -18,6 +18,7 @@ contract MerkleAirdropTest is ZkSyncChainChecker, Test {
     bytes32 proofElementOne = 0x0fd7c981d39bece61f7499702bf59b3114a90e66b51ba2c53abdf7b62986c00a;
     bytes32 proofElementTwo = 0xe5ebd1e1b5a5478a944ecab36a9a954ac3b6b8216875f6524caa7a1d87096576;
     bytes32[] public PROOF = [proofElementOne, proofElementTwo];
+    address public gasPayer;
     address user;
     uint256 userPrivKey;
 
@@ -34,6 +35,7 @@ contract MerkleAirdropTest is ZkSyncChainChecker, Test {
             token.transfer(address(airdrop), AMOUNT_TO_SEND);
         }
         (user, userPrivKey) = makeAddrAndKey("user");
+        gasPayer = makeAddr("gasPayer");
     }
 
     ///////////////////////////////////////////
@@ -43,10 +45,13 @@ contract MerkleAirdropTest is ZkSyncChainChecker, Test {
         // ARRANGE
         uint256 startingBalance = token.balanceOf(user);
         console.log(address(user));
+        bytes32 digest = airdrop.getMessageHash(user, AMOUNT_TO_CLAIM);
 
         // ACT
-        vm.prank(user);
-        airdrop.claim(user, AMOUNT_TO_CLAIM, PROOF);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivKey, digest);
+
+        vm.prank(gasPayer);
+        airdrop.claim(user, AMOUNT_TO_CLAIM, PROOF, v, r, s);
         uint256 endingBalance = token.balanceOf(user);
         console.log("Ending Balance: ", endingBalance);
 
@@ -56,23 +61,38 @@ contract MerkleAirdropTest is ZkSyncChainChecker, Test {
 
     function testUsersCannotClaimTwice() public {
         // ARRANGE / ACT
-        vm.prank(user);
-        airdrop.claim(user, AMOUNT_TO_CLAIM, PROOF);
+        bytes32 digest = airdrop.getMessageHash(user, AMOUNT_TO_CLAIM);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivKey, digest);
+        vm.prank(gasPayer);
+        airdrop.claim(user, AMOUNT_TO_CLAIM, PROOF, v, r, s);
 
         // ASSERT
         vm.expectRevert(MerkleAirdrop.MerkleAirdrop__AlreadyClaimed.selector);
-        vm.prank(user);
-        airdrop.claim(user, AMOUNT_TO_CLAIM, PROOF);
+        vm.prank(gasPayer);
+        airdrop.claim(user, AMOUNT_TO_CLAIM, PROOF, v, r, s);
     }
 
-    function testInvalidUserCannotClaim() public {
+    function testRevertIfInvalidProof() public {
         // ARRANGE
-        address invalidUser = makeAddr("invalidUser");
+        bytes32 digest = airdrop.getMessageHash(user, AMOUNT_TO_CLAIM + AMOUNT_TO_CLAIM);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivKey, digest);
 
         // ACT / ASSERT
         vm.expectRevert(MerkleAirdrop.MerkleAirdrop__InvalidProof.selector);
-        vm.prank(invalidUser);
-        airdrop.claim(invalidUser, AMOUNT_TO_CLAIM, PROOF);
+        vm.prank(gasPayer);
+        airdrop.claim(user, AMOUNT_TO_CLAIM + AMOUNT_TO_CLAIM, PROOF, v, r, s);
+    }
+
+    function testRevertsIfInvalidSignature() public {
+        // ARRANGE
+        bytes32 digest = airdrop.getMessageHash(user, AMOUNT_TO_CLAIM);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivKey, digest);
+        address invalidUser = makeAddr("invalidUser");
+
+        // ACT / ASSERT
+        vm.expectRevert(MerkleAirdrop.MerkleAirdrop__InvalidSignature.selector);
+        vm.prank(gasPayer);
+        airdrop.claim(invalidUser, AMOUNT_TO_CLAIM, PROOF, v, r, s);
     }
 
     ///////////////////////////////////////////

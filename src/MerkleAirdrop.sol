@@ -90,6 +90,9 @@ contract MerkleAirdrop is EIP712, ReentrancyGuard {
      * @param account The address of the account claiming tokens.
      * @param amount The amount of tokens to claim.
      * @param merkleProof The Merkle proof that verifies the account's eligibility.
+     * @param v The recovery id of the signature.
+     * @param r The r value of the signature.
+     * @param s The s value of the signature.
      */
     function claim(address account, uint256 amount, bytes32[] calldata merkleProof, uint8 v, bytes32 r, bytes32 s)
         external
@@ -100,7 +103,7 @@ contract MerkleAirdrop is EIP712, ReentrancyGuard {
             revert MerkleAirdrop__AlreadyClaimed();
         }
 
-        if (!_isValidSignature(account, getMessage(account, amount), v, r, s)) {
+        if (!_isValidSignature(account, getMessageHash(account, amount), v, r, s)) {
             revert MerkleAirdrop__InvalidSignature();
         }
         bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(account, amount))));
@@ -119,6 +122,15 @@ contract MerkleAirdrop is EIP712, ReentrancyGuard {
     ///////////////////////////////////////////
     //   Private & Internal View Functions   //
     //////////////////////////////////////////
+    /**
+     * @notice Checks if the signature is valid for the given account and digest.
+     * @param account The address of the account to check.
+     * @param digest The hash of the message that was signed.
+     * @param v The recovery id of the signature.
+     * @param r The r value of the signature.
+     * @param s The s value of the signature.
+     * @return bool Returns true if the signature is valid, false otherwise.
+     */
     function _isValidSignature(address account, bytes32 digest, uint8 v, bytes32 r, bytes32 s)
         internal
         pure
@@ -131,7 +143,13 @@ contract MerkleAirdrop is EIP712, ReentrancyGuard {
     ///////////////////////////////////////////
     //   Public & External View Functions   //
     //////////////////////////////////////////
-    function getMessage(address account, uint256 amount) public view returns (bytes32) {
+    /**
+     * @notice Returns the hash of the message that is used for signing.
+     * @param account The address of the account claiming tokens.
+     * @param amount The amount of tokens to claim.
+     * @return bytes32 Returns the hash of the message.
+     */
+    function getMessageHash(address account, uint256 amount) public view returns (bytes32) {
         return
             _hashTypedDataV4(keccak256(abi.encode(MESSAGE_TYPEHASH, AirdropClaim({account: account, amount: amount}))));
     }
