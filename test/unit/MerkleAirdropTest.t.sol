@@ -4,8 +4,11 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {MerkleAirdrop} from "src/MerkleAirdrop.sol";
 import {BagelToken} from "src/BagelToken.sol";
+import {ZkSyncChainChecker} from "lib/foundry-devops/src/ZkSyncChainChecker.sol"; // If using foundry-devops
+import {DeployMerkleAirdrop} from "script/DeployMerkleAirdrop.s.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract MerkleAirdropTest is Test {
+contract MerkleAirdropTest is ZkSyncChainChecker, Test {
     MerkleAirdrop public airdrop;
     BagelToken public token;
 
@@ -19,10 +22,17 @@ contract MerkleAirdropTest is Test {
     uint256 userPrivKey;
 
     function setUp() public {
-        token = new BagelToken();
-        airdrop = new MerkleAirdrop(ROOT, token);
-        token.mint(token.owner(), AMOUNT_TO_SEND);
-        token.transfer(address(airdrop), AMOUNT_TO_SEND);
+        if (!isZkSyncChain()) {
+            // This check is from ZkSyncChainChecker
+            // Deploy with the script
+            DeployMerkleAirdrop deployer = new DeployMerkleAirdrop();
+            (airdrop, token) = deployer.deployMerkleAirdrop();
+        } else {
+            token = new BagelToken();
+            airdrop = new MerkleAirdrop(ROOT, token);
+            token.mint(token.owner(), AMOUNT_TO_SEND);
+            token.transfer(address(airdrop), AMOUNT_TO_SEND);
+        }
         (user, userPrivKey) = makeAddrAndKey("user");
     }
 
@@ -73,7 +83,7 @@ contract MerkleAirdropTest is Test {
         assertEq(airdrop.getMerkleRoot(), ROOT);
     }
 
-    function testAirdropToken() public view {
+    function testGetAirdropToken() public view {
         // ASSERT
         assertEq(address(airdrop.getAirdropToken()), address(token));
     }
