@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {MerkleAirdrop} from "src/MerkleAirdrop.sol";
 import {BagelToken} from "src/BagelToken.sol";
-import {ZkSyncChainChecker} from "lib/foundry-devops/src/ZkSyncChainChecker.sol"; // If using foundry-devops
+import {ZkSyncChainChecker} from "foundry-devops/src/ZkSyncChainChecker.sol"; // If using foundry-devops
 import {DeployMerkleAirdrop} from "script/DeployMerkleAirdrop.s.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -49,7 +49,6 @@ contract MerkleAirdropTest is ZkSyncChainChecker, Test {
 
         // ACT
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivKey, digest);
-
         vm.prank(gasPayer);
         airdrop.claim(user, AMOUNT_TO_CLAIM, PROOF, v, r, s);
         uint256 endingBalance = token.balanceOf(user);
