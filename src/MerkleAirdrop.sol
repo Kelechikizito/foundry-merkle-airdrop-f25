@@ -34,8 +34,6 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 /**
  * @title MerkleAirdrop
  * @author Kelechi Kizito Ugwu
- * @dev This contract is a placeholder for a Merkle Airdrop implementation.
- * It currently does not contain any functionality.
  */
 contract MerkleAirdrop is EIP712, ReentrancyGuard {
     // Some List of Addresses
@@ -73,6 +71,7 @@ contract MerkleAirdrop is EIP712, ReentrancyGuard {
     //   Events        /////
     ////////////////////////
     event Claim(address indexed account, uint256 amount);
+
     ///////////////////
     //   Functions   //
     ///////////////////

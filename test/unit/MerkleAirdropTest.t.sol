@@ -6,7 +6,7 @@ import {MerkleAirdrop} from "src/MerkleAirdrop.sol";
 import {BagelToken} from "src/BagelToken.sol";
 import {ZkSyncChainChecker} from "foundry-devops/src/ZkSyncChainChecker.sol"; // If using foundry-devops
 import {DeployMerkleAirdrop} from "script/DeployMerkleAirdrop.s.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+// import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract MerkleAirdropTest is ZkSyncChainChecker, Test {
     MerkleAirdrop public airdrop;
